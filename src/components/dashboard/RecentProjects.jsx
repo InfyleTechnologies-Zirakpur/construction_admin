@@ -1,26 +1,18 @@
-function getStatusStyle(status) {
-  const styles = {
-    Active: "bg-emerald-50 text-emerald-700",
-    Completed: "bg-blue-50 text-blue-700",
-    "On Hold": "bg-amber-50 text-amber-700",
-  };
-
-  return styles[status] || "bg-slate-100 text-slate-600";
-}
+import { statusBadgeClass } from "../../theme/colors";
 
 export default function RecentProjects({ projects }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-lg transition-all overflow-hidden">
-      <div className="border-b border-slate-200 p-6 flex items-center justify-between">
+    <div className="rounded-2xl border border-line bg-white shadow-sm hover:shadow-lg transition-all overflow-hidden">
+      <div className="border-b border-line p-6 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 className="text-lg font-bold text-dark">
             Recent Projects
           </h2>
-          <p className="mt-1 text-sm text-slate-500">Latest project updates</p>
+          <p className="mt-1 text-sm text-text-secondary">Latest project updates</p>
 
         </div>
 
-        <button className="text-sm font-semibold text-blue-600 hover:text-blue-700">
+        <button className="text-sm font-semibold text-primary hover:text-primary-700">
           View All
         </button>
       </div>
@@ -43,7 +35,7 @@ export default function RecentProjects({ projects }) {
               </div>
 
               <span
-                className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${getStatusStyle(
+                className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(
                   project.status
                 )}`}
               >
@@ -64,7 +56,7 @@ export default function RecentProjects({ projects }) {
 
               <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                 <div
-                  className="h-full rounded-full bg-blue-600"
+                  className="h-full rounded-full bg-primary"
                   style={{
                     width: `${project.progress}%`,
                   }}

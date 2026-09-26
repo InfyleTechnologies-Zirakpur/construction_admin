@@ -1,19 +1,28 @@
 import {
   Menu,
-  Bell,
   Search,
   ChevronDown,
-  Sun,
   Settings,
+  LogOut,
 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Navbar({ setSidebarOpen }) {
+  const navigate = useNavigate();
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
+  const handleLogout = () => {
+    localStorage.removeItem("adminAuth");
+    localStorage.removeItem("adminEmail");
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminUser");
+    navigate("/login", { replace: true });
+  };
+
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-md px-4 sm:px-6 lg:px-8 py-4 shadow-sm">
+    <header className="sticky top-0 z-30 border-b border-line bg-white/90 px-4 py-4 backdrop-blur-md sm:px-6 lg:px-8">
       <div className="flex h-16 items-center justify-between">
         {/* Left */}
         <div className="flex items-center gap-4 flex-1">
@@ -24,51 +33,45 @@ export default function Navbar({ setSidebarOpen }) {
             <Menu size={24} className="text-slate-700" />
           </button>
 
-          <div className="hidden items-center gap-2 rounded-lg bg-slate-100 px-4 py-2.5 md:flex hover:bg-slate-200 transition-colors">
+          <div className="hidden items-center gap-2 rounded-lg border border-line bg-white px-4 py-2.5 shadow-sm md:flex">
             <Search size={18} className="text-slate-500" />
             <input
               type="text"
               placeholder="Search users, projects, reports..."
-              className="w-64 bg-transparent text-sm outline-none placeholder-slate-400"
+              className="w-64 bg-transparent text-sm text-dark outline-none placeholder-slate-400"
             />
           </div>
         </div>
 
         {/* Right */}
         <div className="flex items-center gap-2 sm:gap-4">
-          <button className="rounded-lg p-2 hover:bg-slate-100 transition-colors">
-            <Sun size={20} className="text-slate-600" />
-          </button>
-
-          <button className="relative rounded-lg p-2 hover:bg-slate-100 transition-colors group">
-            <Bell size={20} className="text-slate-600" />
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-          </button>
-
-          <div className="hidden h-6 w-px bg-slate-300 sm:block" />
-
           <div className="relative">
             <button
               onClick={() => setProfileOpen(!profileOpen)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-primary-50"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-bold text-white shadow-sm">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-600 text-sm font-bold text-white shadow-sm">
                 AU
               </div>
               <div className="hidden text-left sm:block">
-                <p className="text-sm font-semibold text-slate-800">Admin User</p>
-                <p className="text-xs text-slate-500">Administrator</p>
+                <p className="text-sm font-semibold text-dark">Admin User</p>
+                <p className="text-xs text-primary-700">Administrator</p>
               </div>
-              <ChevronDown size={16} className="text-slate-500 hidden sm:block" />
+              <ChevronDown size={16} className="hidden text-primary-700 sm:block" />
             </button>
 
             {profileOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-lg bg-white border border-slate-200 shadow-lg py-2">
+              <div className="absolute right-0 mt-2 w-48 rounded-lg bg-white border border-line shadow-lg py-2">
                 <button className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
                   <Settings size={16} /> Settings
                 </button>
-                <hr className="my-1" />
-                <button className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50">Logout</button>
+                <hr className="my-1 border-line" />
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 text-left text-sm text-error hover:bg-error-50 flex items-center gap-2"
+                >
+                  <LogOut size={16} /> Logout
+                </button>
               </div>
             )}
           </div>

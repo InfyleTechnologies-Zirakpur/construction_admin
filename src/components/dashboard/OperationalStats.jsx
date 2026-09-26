@@ -1,11 +1,11 @@
 export default function OperationalStats({ data }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-lg transition-all overflow-hidden">
-      <div className="border-b border-slate-200 p-6">
-        <h2 className="text-lg font-bold text-slate-900">
+    <div className="rounded-2xl border border-line bg-white shadow-sm hover:shadow-lg transition-all overflow-hidden">
+      <div className="border-b border-line p-6">
+        <h2 className="text-lg font-bold text-dark">
           Operational Statistics
         </h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-text-secondary">
           Current platform performance
         </p>
       </div>
@@ -26,7 +26,7 @@ export default function OperationalStats({ data }) {
 
             <div className="h-2 overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-blue-600 transition-all duration-500"
+                className="h-full rounded-full bg-primary transition-all duration-500"
                 style={{
                   width: `${item.percentage}%`,
                 }}

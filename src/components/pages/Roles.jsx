@@ -1,10 +1,10 @@
 import { Plus, Edit2, Trash2, Shield, Lock } from "lucide-react";
 
 const roles = [
-  { id: 1, name: "Administrator", permissions: 15, users: 2, description: "Full system access", color: "from-red-400 to-red-600" },
+  { id: 1, name: "Administrator", permissions: 15, users: 2, description: "Full system access", color: "from-primary to-primary-600" },
   { id: 2, name: "Manager", permissions: 10, users: 5, description: "Team management access", color: "from-blue-400 to-blue-600" },
-  { id: 3, name: "Developer", permissions: 8, users: 12, description: "Development access", color: "from-purple-400 to-purple-600" },
-  { id: 4, name: "User", permissions: 3, users: 45, description: "Limited read-only access", color: "from-emerald-400 to-emerald-600" },
+  { id: 3, name: "Developer", permissions: 8, users: 12, description: "Development access", color: "from-dark-400 to-dark-600" },
+  { id: 4, name: "User", permissions: 3, users: 45, description: "Limited read-only access", color: "from-success-400 to-success-600" },
 ];
 
 export default function Roles() {
@@ -15,7 +15,7 @@ export default function Roles() {
           <h1 className="text-3xl font-bold text-slate-900">Roles & Permissions</h1>
           <p className="mt-2 text-slate-600">Manage {roles.length} roles and access control</p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-blue-600 text-white px-4 py-2.5 hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/20">
+        <button className="flex items-center gap-2 rounded-lg bg-primary text-white px-4 py-2.5 hover:bg-primary-600 transition-colors font-medium shadow-lg shadow-primary/20">
           <Plus size={20} /> Create Role
         </button>
       </div>

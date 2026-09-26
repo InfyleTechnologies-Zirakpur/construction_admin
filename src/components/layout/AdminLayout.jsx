@@ -7,16 +7,16 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-background">
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
       />
 
-      <div className="lg:ml-72">
+      <div className="lg:ml-[17rem]">
         <Navbar setSidebarOpen={setSidebarOpen} />
 
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

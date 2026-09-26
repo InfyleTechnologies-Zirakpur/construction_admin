@@ -7,21 +7,23 @@ import {
   Legend,
 } from "recharts";
 
+import { colors } from "../../theme/colors";
+
 const COLORS = [
-  "#2563eb",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
+  colors.blue,
+  colors.success,
+  colors.warning,
+  colors.primary,
 ];
 
 export default function ProjectStatusChart({ data }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-lg transition-all overflow-hidden">
-      <div className="border-b border-slate-200 p-6">
-        <h2 className="text-lg font-bold text-slate-900">
+    <div className="overflow-hidden rounded-xl border border-line bg-white shadow-[0_6px_18px_rgba(30,42,56,0.04)] transition-all hover:shadow-lg">
+      <div className="border-b border-line p-6">
+        <h2 className="text-lg font-bold text-dark">
           Project Status
         </h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-text-secondary">
           Distribution of project statuses
         </p>
       </div>

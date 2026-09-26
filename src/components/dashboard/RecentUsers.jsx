@@ -1,37 +1,28 @@
 import { MoreHorizontal } from "lucide-react";
-
-function getStatusStyle(status) {
-  const styles = {
-    Active: "bg-emerald-50 text-emerald-700",
-    Pending: "bg-amber-50 text-amber-700",
-    Verified: "bg-blue-50 text-blue-700",
-  };
-
-  return styles[status] || "bg-slate-100 text-slate-600";
-}
+import { statusBadgeClass } from "../../theme/colors";
 
 export default function RecentUsers({ users }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-lg transition-all overflow-hidden">
-      <div className="border-b border-slate-200 p-6 flex items-center justify-between">
+    <div className="rounded-2xl border border-line bg-white shadow-sm hover:shadow-lg transition-all overflow-hidden">
+      <div className="border-b border-line p-6 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 className="text-lg font-bold text-dark">
             Recent Users
           </h2>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-text-secondary">
             Recently joined users and companies
           </p>
         </div>
 
-        <button className="text-sm font-semibold text-blue-600 hover:text-blue-700">
+        <button className="text-sm font-semibold text-primary hover:text-primary-700">
           View All
         </button>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="border-y border-slate-200 bg-slate-50">
+          <thead className="border-y border-line bg-slate-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                 User
@@ -61,7 +52,7 @@ export default function RecentUsers({ users }) {
               >
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-semibold text-blue-600">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 font-semibold text-primary-700">
                       {user.name.charAt(0)}
                     </div>
 
@@ -83,7 +74,7 @@ export default function RecentUsers({ users }) {
 
                 <td className="px-6 py-4">
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusStyle(
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(
                       user.status
                     )}`}
                   >
