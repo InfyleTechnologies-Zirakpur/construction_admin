@@ -1,49 +1,122 @@
-import { Plus, Download, Settings, Zap, Grid, Code } from "lucide-react";
+import { useState } from "react";
+import { Calculator, Loader2, Play } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { calculatorsApi, apiError } from "../../api";
 
-const tools = [
-  { id: 1, name: "Figma", category: "Design", status: "Active", users: 12, icon: "🎨" },
-  { id: 2, name: "GitHub", category: "Development", status: "Active", users: 45, icon: "💻" },
-  { id: 3, name: "Jira", category: "Project Management", status: "Active", users: 38, icon: "📋" },
-  { id: 4, name: "Slack", category: "Communication", status: "Active", users: 120, icon: "💬" },
+// Field configs mirror backend @Query params in calculators.controller.ts
+const TOOLS = [
+  { key: "concrete", name: "Concrete", fields: ["length", "breadth", "height", "mixRatio"], defaults: { mixRatio: "1:2:4" } },
+  { key: "cement", name: "Cement", fields: ["area", "thickness", "mixRatio"], defaults: { mixRatio: "1:4" } },
+  { key: "sand", name: "Sand", fields: ["area", "thickness", "mixRatio"], defaults: { mixRatio: "1:4" } },
+  { key: "aggregate", name: "Aggregate", fields: ["length", "breadth", "height", "mixRatio"], defaults: { mixRatio: "1:2:4" } },
+  { key: "brick", name: "Brick", fields: ["wallLength", "wallHeight", "wallThickness", "mortarThickness"], defaults: { mortarThickness: "0.01" } },
+  { key: "steel", name: "Steel", fields: ["length", "breadth", "depth", "steelPercentage"], defaults: { steelPercentage: "1" } },
+  { key: "flooring", name: "Flooring", fields: ["roomLength", "roomBreadth", "tileLength", "tileBreadth", "wastagePercent"], defaults: { wastagePercent: "5" } },
+  { key: "paint", name: "Paint", fields: ["wallArea", "coats", "coveragePerLitre"], defaults: { coats: "2", coveragePerLitre: "12" } },
+  { key: "plaster", name: "Plaster", fields: ["area", "thickness", "mixRatio"], defaults: { mixRatio: "1:4" } },
+  { key: "materialEstimation", name: "Material estimation", fields: ["area", "thickness", "materialType"], defaults: { thickness: "0.15", materialType: "concrete" } },
 ];
 
 export default function Tools() {
+  const [active, setActive] = useState(TOOLS[0]);
+  const [inputs, setInputs] = useState({});
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const mutation = useMutation({
+    mutationFn: (params) => calculatorsApi[active.key](params),
+    onSuccess: (data) => {
+      setError(null);
+      setResult(data?.data ?? data);
+    },
+    onError: (e) => {
+      setResult(null);
+      setError(apiError(e));
+    },
+  });
+
+  const run = () => {
+    const params = {};
+    for (const f of active.fields) {
+      const v = inputs[`${active.key}.${f}`] ?? active.defaults[f] ?? "";
+      if (v !== "") params[f] = v;
+    }
+    mutation.mutate(params);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Tools</h1>
-          <p className="mt-2 text-slate-600">Manage {tools.length} integrated tools</p>
-        </div>
-        <button className="flex items-center gap-2 rounded-lg bg-primary text-white px-4 py-2.5 hover:bg-primary-600 transition-colors font-medium shadow-lg shadow-primary/20">
-          <Plus size={20} /> Add Tool
-        </button>
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900">Tools</h1>
+        <p className="mt-2 text-slate-600">
+          {TOOLS.length} construction calculators · live via GET /calculators/*
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {tools.map((tool) => (
-          <div key={tool.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-lg transition-all">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="text-3xl">{tool.icon}</div>
-                <div>
-                  <h3 className="font-bold text-slate-900">{tool.name}</h3>
-                  <p className="text-sm text-slate-500">{tool.category}</p>
-                </div>
-              </div>
-              <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                <Settings size={18} className="text-slate-500" />
-              </button>
-            </div>
-            <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-              <div>
-                <p className="text-xs text-slate-500">Active Users</p>
-                <p className="text-lg font-bold text-slate-900">{tool.users}</p>
-              </div>
-              <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">{tool.status}</span>
-            </div>
-          </div>
+      <div className="flex flex-wrap gap-2">
+        {TOOLS.map((tool) => (
+          <button
+            key={tool.key}
+            onClick={() => {
+              setActive(tool);
+              setResult(null);
+              setError(null);
+            }}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              active.key === tool.key
+                ? "bg-primary text-white shadow-lg shadow-primary/20"
+                : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            {tool.name}
+          </button>
         ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+            <Calculator size={18} /> {active.name} inputs
+          </h2>
+          <div className="mt-4 space-y-3">
+            {active.fields.map((field) => (
+              <label key={field} className="block">
+                <span className="mb-1 block text-xs font-semibold uppercase text-slate-500">{field}</span>
+                <input
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                  placeholder={active.defaults[field] ?? "value"}
+                  value={inputs[`${active.key}.${field}`] ?? ""}
+                  onChange={(e) => setInputs({ ...inputs, [`${active.key}.${field}`]: e.target.value })}
+                />
+              </label>
+            ))}
+          </div>
+          <button
+            onClick={run}
+            disabled={mutation.isPending}
+            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 font-medium text-white shadow-lg shadow-primary/20 transition-colors hover:bg-primary-600 disabled:opacity-50"
+          >
+            {mutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <Play size={18} />}
+            Calculate
+          </button>
+          {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900">Result</h2>
+          {result ? (
+            <dl className="mt-4 space-y-2">
+              {Object.entries(result).map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
+                  <dt className="font-medium text-slate-500">{k}</dt>
+                  <dd className="font-bold text-slate-900">{String(v)}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className="mt-4 text-sm text-slate-500">Enter inputs and press Calculate</p>
+          )}
+        </div>
       </div>
     </div>
   );

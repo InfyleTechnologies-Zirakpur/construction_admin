@@ -1,18 +1,4 @@
-import {
-  LayoutDashboard,
-  Users,
-  Building2,
-  HardHat,
-  FolderKanban,
-  BriefcaseBusiness,
-  ClipboardList,
-  Wrench,
-  ChartNoAxesCombined,
-  Bell,
-  ShieldCheck,
-  ScrollText,
-  X,
-} from "lucide-react";
+import { X } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
 
@@ -20,62 +6,62 @@ const menuItems = [
   {
     name: "Dashboard",
     path: "/dashboard",
-    icon: LayoutDashboard,
+    icon: "fa-solid fa-gauge-high",
   },
   {
     name: "Users",
     path: "/users",
-    icon: Users,
+    icon: "fa-solid fa-users",
   },
   {
     name: "Contractors",
     path: "/contractors",
-    icon: HardHat,
+    icon: "fa-solid fa-helmet-safety",
   },
   {
     name: "Companies",
     path: "/companies",
-    icon: Building2,
+    icon: "fa-solid fa-building",
   },
   {
     name: "Projects",
     path: "/projects",
-    icon: FolderKanban,
+    icon: "fa-solid fa-diagram-project",
   },
   {
     name: "Jobs",
     path: "/jobs",
-    icon: BriefcaseBusiness,
+    icon: "fa-solid fa-briefcase",
   },
   {
     name: "Applications",
     path: "/applications",
-    icon: ClipboardList,
+    icon: "fa-solid fa-clipboard-list",
   },
   {
     name: "Tools",
     path: "/tools",
-    icon: Wrench,
+    icon: "fa-solid fa-screwdriver-wrench",
   },
   {
     name: "Reports",
     path: "/reports",
-    icon: ChartNoAxesCombined,
+    icon: "fa-solid fa-chart-line",
   },
   {
     name: "Audit Logs",
     path: "/audit",
-    icon: ScrollText,
+    icon: "fa-solid fa-scroll",
   },
   {
     name: "Notifications",
     path: "/notifications",
-    icon: Bell,
+    icon: "fa-solid fa-bell",
   },
   {
     name: "RBAC",
     path: "/roles",
-    icon: ShieldCheck,
+    icon: "fa-solid fa-shield-halved",
   },
 ];
 
@@ -137,8 +123,6 @@ export default function Sidebar({
         <div className="px-6 pb-2 pt-7 text-[10px] font-bold uppercase tracking-[0.2em] text-dark-300">Workspace</div>
         <nav className="scrollbar-none flex-1 space-y-1 overflow-y-auto px-3 pb-4">
           {menuItems.map((item) => {
-            const Icon = item.icon;
-
             return (
               <NavLink
                 key={item.path}
@@ -157,7 +141,7 @@ export default function Sidebar({
                   `
                 }
               >
-                <Icon size={20} />
+                <i className={`${item.icon} w-5 text-center text-[17px]`} aria-hidden="true" />
 
                 <span className="font-medium">
                   {item.name}

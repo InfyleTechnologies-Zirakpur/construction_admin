@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, MapPin, IndianRupee, Layers } from "lucide-react";
 import { projectsApi, extractList, apiError } from "../../api";
+import { useFocusHighlight, focusRing } from "../../hooks/useFocusHighlight";
 import { statusBadgeClass } from "../../theme/colors";
 
 const LIMIT = 12;
@@ -21,6 +22,7 @@ export default function Projects() {
   const [newStatus, setNewStatus] = useState("active");
   const [sitesModal, setSitesModal] = useState(null);
   const [notice, setNotice] = useState({ type: "", text: "" });
+  const focusId = useFocusHighlight();
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["projects", page],
@@ -102,7 +104,7 @@ export default function Projects() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {projects.map((project) => (
-            <div key={project.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-lg transition-all">
+            <div key={project.id} id={`row-${project.id}`} className={`rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-lg transition-all ${focusRing(project.id, focusId)}`}>
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">{project.name}</h3>
@@ -220,15 +222,7 @@ export default function Projects() {
                 <p className="py-8 text-center text-sm text-slate-500">No sites found</p>
               ) : (
                 extractList(sitesData).items.map((site) => (
-                  <div key={site.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800">{site.name}</p>
-                      <p className="text-xs text-slate-500">{site.location || ""}</p>
-                    </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusBadgeClass(site.status)}`}>
-                      {site.status}
-                    </span>
-                  </div>
+                  <SiteRow key={site.id} site={site} statusBadgeClass={statusBadgeClass} />
                 ))
               )}
             </div>
@@ -243,6 +237,37 @@ export default function Projects() {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function SiteRow({ site, statusBadgeClass }) {
+  const { data } = useQuery({
+    queryKey: ["site-detail", site.id],
+    queryFn: () => projectsApi.site(site.id),
+  });
+  const detail = data?.data ?? data;
+  const engineers = (detail?.engineerAssignments || [])
+    .filter((a) => a.isActive !== false)
+    .map((a) => a.user?.fullName || a.user?.email || "Engineer")
+    .filter(Boolean);
+
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-slate-800">{site.name}</p>
+          <p className="text-xs text-slate-500">{site.location || ""}</p>
+        </div>
+        <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusBadgeClass(site.status)}`}>
+          {site.status}
+        </span>
+      </div>
+      {engineers.length > 0 && (
+        <p className="mt-2 text-xs text-slate-500">
+          Engineers: <span className="font-medium text-slate-700">{engineers.join(", ")}</span>
+        </p>
       )}
     </div>
   );

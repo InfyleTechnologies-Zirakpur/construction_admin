@@ -25,6 +25,7 @@ export const extractList = (payload) => {
 
 export const authApi = {
   login: (payload) => unwrap(apiClient.post("/auth/login", payload)),
+  me: () => unwrap(apiClient.get("/auth/me")),
 };
 
 export const usersApi = {
@@ -43,6 +44,7 @@ export const companiesApi = {
 
 export const contractorsApi = {
   list: (params) => unwrap(apiClient.get("/contractors", { params })),
+  get: (id) => unwrap(apiClient.get(`/contractors/${id}`)),
   verify: (id, payload) =>
     unwrap(apiClient.patch(`/contractors/${id}/verify`, payload)),
 };
@@ -52,6 +54,7 @@ export const projectsApi = {
   get: (id) => unwrap(apiClient.get(`/projects/${id}`)),
   update: (id, payload) => unwrap(apiClient.patch(`/projects/${id}`, payload)),
   sites: (projectId) => unwrap(apiClient.get(`/projects/${projectId}/sites`)),
+  site: (siteId) => unwrap(apiClient.get(`/sites/${siteId}`)),
 };
 
 export const jobsApi = {
@@ -70,9 +73,51 @@ export const applicationsApi = {
 };
 
 export const documentsApi = {
-  list: () => unwrap(apiClient.get("/documents")),
+  list: (params) => unwrap(apiClient.get("/documents", { params })),
+  get: (id) => unwrap(apiClient.get(`/documents/${id}`)),
 };
 
 export const auditApi = {
   list: (params) => unwrap(apiClient.get("/audit-logs", { params })),
+};
+
+export const siteEngineersApi = {
+  list: () => unwrap(apiClient.get("/site-engineers")),
+  get: (id) => unwrap(apiClient.get(`/site-engineers/${id}`)),
+};
+
+export const reportsApi = {
+  projectReports: (projectId, params) =>
+    unwrap(apiClient.get(`/projects/${projectId}/reports`, { params })),
+  siteReports: (siteId, params) =>
+    unwrap(apiClient.get(`/sites/${siteId}/daily-reports`, { params })),
+  get: (id) => unwrap(apiClient.get(`/reports/${id}`)),
+  updateStatus: (id, payload) =>
+    unwrap(apiClient.patch(`/reports/${id}/status`, payload)),
+};
+
+export const notificationsApi = {
+  mine: (params) => unwrap(apiClient.get("/notifications", { params })),
+  send: (payload) => unwrap(apiClient.post("/notifications/send", payload)),
+  markRead: (id) => unwrap(apiClient.patch(`/notifications/${id}/read`)),
+  markAllRead: () => unwrap(apiClient.patch("/notifications/read-all")),
+};
+
+export const conversationsApi = {
+  list: () => unwrap(apiClient.get("/conversations")),
+  messages: (id) => unwrap(apiClient.get(`/conversations/${id}/messages`)),
+};
+
+export const calculatorsApi = {
+  concrete: (params) => unwrap(apiClient.get("/calculators/concrete", { params })),
+  cement: (params) => unwrap(apiClient.get("/calculators/cement", { params })),
+  sand: (params) => unwrap(apiClient.get("/calculators/sand", { params })),
+  aggregate: (params) => unwrap(apiClient.get("/calculators/aggregate", { params })),
+  brick: (params) => unwrap(apiClient.get("/calculators/brick", { params })),
+  steel: (params) => unwrap(apiClient.get("/calculators/steel", { params })),
+  flooring: (params) => unwrap(apiClient.get("/calculators/flooring", { params })),
+  paint: (params) => unwrap(apiClient.get("/calculators/paint", { params })),
+  plaster: (params) => unwrap(apiClient.get("/calculators/plaster", { params })),
+  materialEstimation: (params) =>
+    unwrap(apiClient.get("/calculators/material-estimation", { params })),
 };

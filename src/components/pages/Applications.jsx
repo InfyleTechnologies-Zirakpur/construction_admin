@@ -1,25 +1,32 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Loader2, Eye } from "lucide-react";
-import { applicationsApi, extractList, apiError } from "../../api";
+import { Loader2, Eye, FileText, ExternalLink } from "lucide-react";
+import { applicationsApi, usersApi, documentsApi, extractList, apiError } from "../../api";
+import DataTable from "../common/DataTable";
+import { useFocusHighlight, focusRing } from "../../hooks/useFocusHighlight";
 import { statusBadgeClass } from "../../theme/colors";
 
-const LIMIT = 10;
+const APP_COLUMNS = [
+  { key: "app", label: "Application" },
+  { key: "job", label: "Job" },
+  { key: "user", label: "User" },
+  { key: "status", label: "Status" },
+  { key: "actions", label: "Actions", center: true },
+];
 
 const STATUS_OPTIONS = ["pending", "shortlisted", "accepted", "rejected"];
 
 export default function Applications() {
   const queryClient = useQueryClient();
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
   const [detail, setDetail] = useState(null);
   const [statusTarget, setStatusTarget] = useState(null);
   const [newStatus, setNewStatus] = useState("pending");
   const [notice, setNotice] = useState({ type: "", text: "" });
+  const focusId = useFocusHighlight();
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["applications", page],
-    queryFn: () => applicationsApi.list({ page, limit: LIMIT }),
+    queryKey: ["applications"],
+    queryFn: () => applicationsApi.list({ page: 1, limit: 100 }),
   });
 
   const { data: detailData, isLoading: detailLoading } = useQuery({
@@ -27,6 +34,19 @@ export default function Applications() {
     queryFn: () => applicationsApi.get(detail.id),
     enabled: !!detail,
   });
+
+  const applicantId = detail?.userId || detailData?.data?.userId;
+  const { data: applicantData } = useQuery({
+    queryKey: ["applicant-profile", applicantId],
+    queryFn: () => usersApi.get(applicantId),
+    enabled: !!applicantId,
+  });
+  const { data: applicantDocsData } = useQuery({
+    queryKey: ["applicant-docs", applicantId],
+    queryFn: () => documentsApi.list(),
+  });
+  const applicant = applicantData?.data ?? applicantData;
+  const applicantDocs = extractList(applicantDocsData).items.filter((d) => d.ownerId === applicantId);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["applications"] });
 
@@ -41,17 +61,16 @@ export default function Applications() {
   });
 
   const { items: applications, total } = extractList(data);
-  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
 
-  const filtered = applications.filter((app) => {
-    const term = search.trim().toLowerCase();
-    return (
-      !term ||
-      app.id?.toLowerCase().includes(term) ||
-      app.jobId?.toLowerCase().includes(term) ||
-      app.userId?.toLowerCase().includes(term)
-    );
-  });
+  const onAction = (action, id) => {
+    const app = applications.find((a) => String(a.id) === String(id));
+    if (!app) return;
+    if (action === "detail") setDetail(app);
+    if (action === "status") {
+      setStatusTarget(app);
+      setNewStatus(app.status || "pending");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -77,19 +96,6 @@ export default function Applications() {
       )}
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="border-b border-slate-200 p-6">
-          <div className="flex items-center gap-3 bg-slate-50 rounded-lg px-4 py-2.5 md:w-96">
-            <Search size={18} className="text-slate-500" />
-            <input
-              type="text"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by id, job, or user..."
-              className="bg-transparent outline-none w-full text-sm"
-            />
-          </div>
-        </div>
-
         {isError ? (
           <div className="p-10 text-center">
             <p className="text-sm text-red-600">{apiError(error)}</p>
@@ -100,91 +106,50 @@ export default function Applications() {
               Retry
             </button>
           </div>
+        ) : isLoading ? (
+          <div className="p-10 text-center">
+            <Loader2 className="mx-auto h-6 w-6 animate-spin text-slate-400" />
+          </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Application</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Job</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">User</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Status</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-slate-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-16 text-center">
-                      <Loader2 className="mx-auto h-6 w-6 animate-spin text-slate-400" />
-                    </td>
-                  </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-16 text-center text-sm text-slate-500">
-                      No applications found
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((app) => (
-                    <tr key={app.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-medium text-slate-900">{app.id}</td>
-                      <td className="px-6 py-4 text-sm text-slate-600">{app.jobId || "—"}</td>
-                      <td className="px-6 py-4 text-sm text-slate-600">{app.userId || "—"}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${statusBadgeClass(app.status)}`}>
-                          {app.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => setDetail(app)}
-                            className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-                            title="View details"
-                          >
-                            <Eye size={18} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setStatusTarget(app);
-                              setNewStatus(app.status || "pending");
-                            }}
-                            className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800 transition-colors"
-                          >
-                            Update Status
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            id="applications-table"
+            columns={APP_COLUMNS}
+            data={applications}
+            onAction={onAction}
+            emptyText="No applications found"
+            renderRow={(app) => (
+              <tr key={app.id} id={`row-${app.id}`} className={`border-b border-slate-200 hover:bg-slate-50 transition-colors ${focusRing(app.id, focusId)}`}>
+                <td className="px-6 py-4 text-sm font-medium text-slate-900">{app.id}</td>
+                <td className="px-6 py-4 text-sm text-slate-600">{app.jobId || "—"}</td>
+                <td className="px-6 py-4 text-sm text-slate-600">{app.userId || "—"}</td>
+                <td className="px-6 py-4">
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${statusBadgeClass(app.status)}`}>
+                    {app.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      data-action="detail"
+                      data-id={app.id}
+                      className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                      title="View details"
+                    >
+                      <Eye size={18} className="pointer-events-none" />
+                    </button>
+                    <button
+                      data-action="status"
+                      data-id={app.id}
+                      className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800 transition-colors"
+                    >
+                      <span className="pointer-events-none">Update Status</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            )}
+          />
         )}
-
-        <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
-          <p className="text-sm text-slate-500">
-            Showing {total === 0 ? 0 : (page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of {total}
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-            >
-              Prev
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-            >
-              Next
-            </button>
-          </div>
-        </div>
       </div>
 
       {statusTarget && (
@@ -275,6 +240,46 @@ export default function Applications() {
                     </div>
                   </>
                 )
+              )}
+            </div>
+
+            {applicant && (
+              <div className="mt-4 rounded-xl bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-700">Applicant profile</p>
+                <p className="mt-1 text-sm text-slate-800">
+                  {applicant.fullName || "—"} · {applicant.email || ""} · {applicant.phone || ""}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {applicant.city || "—"} · {(applicant.skills || []).join(", ") || "no skills"} · {applicant.role}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-4">
+              <p className="mb-2 text-sm font-semibold text-slate-700">
+                Applicant documents ({applicantDocs.length})
+              </p>
+              {applicantDocs.length === 0 ? (
+                <p className="text-sm text-slate-400">No documents uploaded by this applicant</p>
+              ) : (
+                <div className="space-y-2">
+                  {applicantDocs.map((doc) => (
+                    <a
+                      key={doc.id}
+                      href={doc.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5 hover:bg-blue-50"
+                    >
+                      <FileText size={16} className="shrink-0 text-blue-600" />
+                      <span className="flex-1 truncate text-sm font-medium text-slate-800">
+                        {doc.originalFilename || doc.id}
+                      </span>
+                      <span className="text-xs text-slate-400">{doc.entityType}</span>
+                      <ExternalLink size={14} className="shrink-0 text-slate-400" />
+                    </a>
+                  ))}
+                </div>
               )}
             </div>
 

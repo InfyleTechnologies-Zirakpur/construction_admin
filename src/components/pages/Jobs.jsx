@@ -1,22 +1,32 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, MapPin, IndianRupee, BriefcaseBusiness } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { jobsApi, extractList, apiError } from "../../api";
+import DataTable from "../common/DataTable";
+import { useFocusHighlight, focusRing } from "../../hooks/useFocusHighlight";
 import { statusBadgeClass } from "../../theme/colors";
 
-const LIMIT = 12;
+const COLUMNS = [
+  { key: "title", label: "Job" },
+  { key: "location", label: "Location" },
+  { key: "pay", label: "Pay" },
+  { key: "category", label: "Category" },
+  { key: "status", label: "Status" },
+  { key: "actions", label: "Actions", center: true },
+];
 
 export default function Jobs() {
   const queryClient = useQueryClient();
-  const [page, setPage] = useState(1);
+  const [category, setCategory] = useState("all");
   const [moderateTarget, setModerateTarget] = useState(null);
   const [moderateStatus, setModerateStatus] = useState("published");
   const [remarks, setRemarks] = useState("");
   const [notice, setNotice] = useState({ type: "", text: "" });
+  const focusId = useFocusHighlight();
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["jobs", page],
-    queryFn: () => jobsApi.list({ page, limit: LIMIT }),
+    queryKey: ["jobs"],
+    queryFn: () => jobsApi.list({ page: 1, limit: 100 }),
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["jobs"] });
@@ -46,7 +56,22 @@ export default function Jobs() {
   });
 
   const { items: jobs, total } = extractList(data);
-  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
+  const categories = ["all", ...new Set(jobs.map((j) => j.projectType).filter(Boolean))];
+  const filtered = category === "all" ? jobs : jobs.filter((j) => j.projectType === category);
+
+  const onAction = (action, id) => {
+    const job = jobs.find((j) => String(j.id) === String(id));
+    if (!job) return;
+    if (action === "moderate") {
+      setModerateTarget(job);
+      setModerateStatus("published");
+      setRemarks("");
+      setNotice({ type: "", text: "" });
+    }
+    if (action === "delete" && window.confirm(`Delete "${job.title}"? This cannot be undone.`)) {
+      deleteMutation.mutate(job.id);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -54,9 +79,18 @@ export default function Jobs() {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Jobs</h1>
           <p className="mt-2 text-slate-600">
-            {isLoading ? "Loading..." : `Browse and moderate ${total} posted jobs`}
+            {isLoading ? "Loading..." : `Categories, listings, moderation & applications — ${total} jobs`}
           </p>
         </div>
+        <select
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
+          {categories.map((c) => (
+            <option key={c} value={c}>{c === "all" ? "All categories" : c}</option>
+          ))}
+        </select>
       </div>
 
       {notice.text && (
@@ -71,128 +105,67 @@ export default function Jobs() {
         </div>
       )}
 
-      {isError ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center">
-          <p className="text-sm text-red-600">{apiError(error)}</p>
-          <button
-            onClick={invalidate}
-            className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
-          >
-            Retry
-          </button>
-        </div>
-      ) : isLoading ? (
-        <div className="space-y-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="h-32 animate-pulse rounded-2xl border border-slate-200 bg-slate-100" />
-          ))}
-        </div>
-      ) : jobs.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-16 text-center text-sm text-slate-500">
-          No jobs found
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {jobs.map((job) => (
-            <div key={job.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-lg transition-all">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="h-12 w-12 rounded-lg bg-slate-900 text-white flex items-center justify-center">
-                      <BriefcaseBusiness size={22} />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">{job.title}</h3>
-                      <p className="text-sm text-slate-500">Company ID: {job.companyId || "—"}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-3 mt-4">
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <MapPin size={16} />
-                      <span className="text-sm">{job.location || "—"}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <IndianRupee size={16} />
-                      <span className="text-sm">{job.dailyPay != null ? `₹${job.dailyPay}/day` : "—"}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        {isError ? (
+          <div className="p-10 text-center">
+            <p className="text-sm text-red-600">{apiError(error)}</p>
+            <button
+              onClick={invalidate}
+              className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
+            >
+              Retry
+            </button>
+          </div>
+        ) : isLoading ? (
+          <div className="p-10 text-center">
+            <Loader2 className="mx-auto h-6 w-6 animate-spin text-slate-400" />
+          </div>
+        ) : (
+          <DataTable
+            id="jobs-table"
+            columns={COLUMNS}
+            data={filtered}
+            onAction={onAction}
+            emptyText="No jobs found"
+            renderRow={(job) => (
+              <tr key={job.id} id={`row-${job.id}`} className={`border-b border-slate-200 hover:bg-slate-50 transition-colors ${focusRing(job.id, focusId)}`}>
+                <td className="px-6 py-4">
+                  <p className="font-medium text-slate-900">{job.title}</p>
+                  <p className="text-xs text-slate-500">Company: {job.companyId || "—"}</p>
+                </td>
+                <td className="px-6 py-4 text-sm text-slate-600">{job.location || "—"}</td>
+                <td className="px-6 py-4 text-sm text-slate-600">
+                  {job.dailyPay != null ? `₹${job.dailyPay}/day` : "—"}
+                </td>
+                <td className="px-6 py-4 text-sm text-slate-600">{job.projectType || "—"}</td>
+                <td className="px-6 py-4">
                   <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${statusBadgeClass(job.status)}`}>
                     {job.status}
                   </span>
-                  {job.status === "published" ? (
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <div className="flex items-center justify-center gap-2">
                     <button
-                      onClick={() => {
-                        setModerateTarget(job);
-                        setModerateStatus("published");
-                        setRemarks("");
-                      }}
+                      data-action="moderate"
+                      data-id={job.id}
                       className="px-3 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium hover:bg-slate-50 transition-colors"
                     >
-                      Moderate
+                      <span className="pointer-events-none">Moderate</span>
                     </button>
-                  ) : job.status === "pending" ? (
                     <button
-                      onClick={() => {
-                        setModerateTarget(job);
-                        setModerateStatus("published");
-                        setRemarks("");
-                      }}
-                      className="px-3 py-2 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary-600 transition-colors"
+                      data-action="delete"
+                      data-id={job.id}
+                      disabled={deleteMutation.isPending}
+                      className="px-3 py-2 rounded-lg border border-red-200 text-red-600 text-xs font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
                     >
-                      Review
+                      <span className="pointer-events-none">Delete</span>
                     </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setModerateTarget(job);
-                        setModerateStatus("published");
-                        setRemarks("");
-                      }}
-                      className="px-3 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium hover:bg-slate-50 transition-colors"
-                    >
-                      Re-publish
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`Delete "${job.title}"? This cannot be undone.`)) {
-                        deleteMutation.mutate(job.id);
-                      }
-                    }}
-                    disabled={deleteMutation.isPending}
-                    className="px-3 py-2 rounded-lg border border-red-200 text-red-600 text-xs font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">
-          Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, total)} of {total}
-        </p>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-          >
-            Prev
-          </button>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page >= totalPages}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-          >
-            Next
-          </button>
-        </div>
+                  </div>
+                </td>
+              </tr>
+            )}
+          />
+        )}
       </div>
 
       {moderateTarget && (
