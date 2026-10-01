@@ -20,14 +20,6 @@ import { notificationTarget } from "../../api/notificationTargets";
 
 const EVENTS = [
   "admin_announcement",
-  "new_job",
-  "application_update",
-  "newMessage",
-  "project_assignment",
-  "site_assignment",
-  "attendance_event",
-  "daily_report_submitted",
-  "project_update",
 ];
 
 export default function Notifications() {
