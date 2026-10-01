@@ -98,6 +98,7 @@ export const reportsApi = {
 
 export const notificationsApi = {
   mine: (params) => unwrap(apiClient.get("/notifications", { params })),
+  adminList: (params) => unwrap(apiClient.get("/notifications/admin", { params })),
   send: (payload) => unwrap(apiClient.post("/notifications/send", payload)),
   markRead: (id) => unwrap(apiClient.patch(`/notifications/${id}/read`)),
   markAllRead: () => unwrap(apiClient.patch("/notifications/read-all")),
