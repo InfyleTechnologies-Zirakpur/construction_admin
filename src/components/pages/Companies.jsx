@@ -61,6 +61,13 @@ export default function Companies() {
 
   const { items: companies, total } = extractList(data);
 
+  const { data: detailData, isLoading: detailLoading } = useQuery({
+    queryKey: ["company-detail", detail?.id],
+    queryFn: () => companiesApi.get(detail.id),
+    enabled: !!detail?.id,
+  });
+  const fullDetail = detailData?.data ?? detail;
+
   const onAction = (action, id) => {
     const company = companies.find((c) => String(c.id) === String(id));
     if (!company) return;
@@ -242,34 +249,99 @@ export default function Companies() {
 
       {detail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-bold text-slate-900">{detail.name}</h3>
-            <p className="mt-1 text-sm text-slate-500">{detail.contactEmail}</p>
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-slate-900">{fullDetail?.name || detail.name}</h3>
+            <p className="mt-1 text-sm text-slate-500">{fullDetail?.contactEmail || detail.contactEmail}</p>
 
+            {detailLoading ? (
+              <div className="py-8 text-center">
+                <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-400" />
+              </div>
+            ) : (
             <div className="mt-5 space-y-3 text-sm">
               <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Registration no.</span>
+                <span className="font-medium text-slate-800">{fullDetail?.registrationNumber || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
                 <span className="text-slate-500">GST Number</span>
-                <span className="font-medium text-slate-800">{detail.gstNumber || "—"}</span>
+                <span className="font-medium text-slate-800">{fullDetail?.gstNumber || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">PAN Number</span>
+                <span className="font-medium text-slate-800">{fullDetail?.panNumber || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Contact phone</span>
+                <span className="font-medium text-slate-800">{fullDetail?.contactPhone || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Alternate phone</span>
+                <span className="font-medium text-slate-800">{fullDetail?.alternatePhone || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Website</span>
+                <span className="font-medium text-slate-800">{fullDetail?.website || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Address</span>
+                <span className="font-medium text-slate-800">{fullDetail?.address || "—"}</span>
               </div>
               <div className="flex justify-between border-b border-slate-100 pb-2">
                 <span className="text-slate-500">City</span>
-                <span className="font-medium text-slate-800">{detail.city || "—"}</span>
+                <span className="font-medium text-slate-800">{fullDetail?.city || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">State</span>
+                <span className="font-medium text-slate-800">{fullDetail?.state || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Pincode</span>
+                <span className="font-medium text-slate-800">{fullDetail?.pincode || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Business type</span>
+                <span className="font-medium text-slate-800">{fullDetail?.businessType || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Established</span>
+                <span className="font-medium text-slate-800">{fullDetail?.yearEstablished || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Team size</span>
+                <span className="font-medium text-slate-800">{fullDetail?.teamSizeRange || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Specializations</span>
+                <span className="font-medium text-slate-800">{(fullDetail?.specializations || []).join(", ") || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Operational areas</span>
+                <span className="font-medium text-slate-800">{(fullDetail?.operationalAreas || []).join(", ") || "—"}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Description</span>
+                <span className="font-medium text-slate-800">{fullDetail?.description || "—"}</span>
               </div>
               <div className="flex justify-between border-b border-slate-100 pb-2">
                 <span className="text-slate-500">Status</span>
-                <span className={`rounded-full px-3 py-0.5 text-xs font-medium ${statusBadgeClass(detail.verificationStatus)}`}>
-                  {detail.verificationStatus}
+                <span className={`rounded-full px-3 py-0.5 text-xs font-medium ${statusBadgeClass(fullDetail?.verificationStatus)}`}>
+                  {fullDetail?.verificationStatus}
                 </span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-500">Verification remarks</span>
+                <span className="font-medium text-slate-800">{fullDetail?.verificationRemarks || "—"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Documents</span>
                 <span className="font-medium text-slate-800">
-                  {(detail.documentUrls || []).length} file{(detail.documentUrls || []).length === 1 ? "" : "s"}
+                  {(fullDetail?.documentUrls || []).length} file{(fullDetail?.documentUrls || []).length === 1 ? "" : "s"}
                 </span>
               </div>
-              {(detail.documentUrls || []).length > 0 && (
+              {(fullDetail?.documentUrls || []).length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {detail.documentUrls.map((url, index) => (
+                  {fullDetail.documentUrls.map((url, index) => (
                     <a
                       key={index}
                       href={url}
@@ -283,6 +355,7 @@ export default function Companies() {
                 </div>
               )}
             </div>
+            )}
 
             <div className="mt-6 flex justify-end">
               <button

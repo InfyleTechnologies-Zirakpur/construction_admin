@@ -131,11 +131,15 @@ export default function Jobs() {
               <tr key={job.id} id={`row-${job.id}`} className={`border-b border-slate-200 hover:bg-slate-50 transition-colors ${focusRing(job.id, focusId)}`}>
                 <td className="px-6 py-4">
                   <p className="font-medium text-slate-900">{job.title}</p>
-                  <p className="text-xs text-slate-500">Company: {job.companyId || "—"}</p>
+                  <p className="text-xs text-slate-500">Company: {job.company?.name || job.companyId || "—"}</p>
                 </td>
                 <td className="px-6 py-4 text-sm text-slate-600">{job.location || "—"}</td>
                 <td className="px-6 py-4 text-sm text-slate-600">
-                  {job.dailyPay != null ? `₹${job.dailyPay}/day` : "—"}
+                  {Number(job.dailyPay) > 0
+                    ? `₹${job.dailyPay}/day`
+                    : Number(job.compensation) > 0
+                      ? `₹${job.compensation}`
+                      : "—"}
                 </td>
                 <td className="px-6 py-4 text-sm text-slate-600">{job.projectType || "—"}</td>
                 <td className="px-6 py-4">

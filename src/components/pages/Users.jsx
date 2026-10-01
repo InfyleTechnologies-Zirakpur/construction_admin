@@ -213,6 +213,12 @@ function UserProfileModal({ userId, onClose, onPreview, onStatusChange, onDeacti
   const user = userData?.data ?? userData;
   const docs = extractList(docsData).items.filter((d) => d.ownerId === userId);
   const company = extractList(companiesData).items.find((c) => c.userId === userId);
+  const { data: companyDetailData } = useQuery({
+    queryKey: ["user-company-detail", company?.id],
+    queryFn: () => companiesApi.get(company.id),
+    enabled: !!company?.id,
+  });
+  const fullCompany = companyDetailData?.data ?? company;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
@@ -248,6 +254,34 @@ function UserProfileModal({ userId, onClose, onPreview, onStatusChange, onDeacti
               <ProfileRow label="Verified" value={user.isVerified ? "Yes" : "No"} />
               {company && <ProfileRow label="Company" value={`${company.name} (${company.verificationStatus})`} />}
             </div>
+
+            {fullCompany && (
+              <div className="mt-5">
+                <p className="mb-2 text-sm font-semibold text-slate-700">Company information</p>
+                <div className="space-y-3 text-sm rounded-xl bg-slate-50 p-4">
+                  <ProfileRow label="Company name" value={fullCompany.name} />
+                  <ProfileRow label="Registration no." value={fullCompany.registrationNumber} />
+                  <ProfileRow label="GST number" value={fullCompany.gstNumber} />
+                  <ProfileRow label="PAN number" value={fullCompany.panNumber} />
+                  <ProfileRow label="Contact email" value={fullCompany.contactEmail} />
+                  <ProfileRow label="Contact phone" value={fullCompany.contactPhone} />
+                  <ProfileRow label="Alternate phone" value={fullCompany.alternatePhone} />
+                  <ProfileRow label="Website" value={fullCompany.website} />
+                  <ProfileRow label="Address" value={fullCompany.address} />
+                  <ProfileRow label="City" value={fullCompany.city} />
+                  <ProfileRow label="State" value={fullCompany.state} />
+                  <ProfileRow label="Pincode" value={fullCompany.pincode} />
+                  <ProfileRow label="Business type" value={fullCompany.businessType} />
+                  <ProfileRow label="Established" value={fullCompany.yearEstablished} />
+                  <ProfileRow label="Team size" value={fullCompany.teamSizeRange} />
+                  <ProfileRow label="Specializations" value={(fullCompany.specializations || []).join(", ")} />
+                  <ProfileRow label="Operational areas" value={(fullCompany.operationalAreas || []).join(", ")} />
+                  <ProfileRow label="Description" value={fullCompany.description} />
+                  <ProfileRow label="Verification" value={fullCompany.verificationStatus} />
+                  <ProfileRow label="Verification remarks" value={fullCompany.verificationRemarks} />
+                </div>
+              </div>
+            )}
 
             <div className="mt-5">
               <p className="mb-2 text-sm font-semibold text-slate-700">Documents ({docs.length})</p>

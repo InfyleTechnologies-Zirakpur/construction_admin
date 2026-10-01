@@ -119,9 +119,9 @@ export default function Applications() {
             emptyText="No applications found"
             renderRow={(app) => (
               <tr key={app.id} id={`row-${app.id}`} className={`border-b border-slate-200 hover:bg-slate-50 transition-colors ${focusRing(app.id, focusId)}`}>
-                <td className="px-6 py-4 text-sm font-medium text-slate-900">{app.id}</td>
-                <td className="px-6 py-4 text-sm text-slate-600">{app.jobId || "—"}</td>
-                <td className="px-6 py-4 text-sm text-slate-600">{app.userId || "—"}</td>
+                <td className="px-6 py-4 text-sm font-medium text-slate-900">#{String(app.id).slice(0, 8)}</td>
+                <td className="px-6 py-4 text-sm text-slate-600">{app.job?.title || "—"}</td>
+                <td className="px-6 py-4 text-sm text-slate-600">{app.user?.fullName || app.user?.email || "—"}</td>
                 <td className="px-6 py-4">
                   <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${statusBadgeClass(app.status)}`}>
                     {app.status}
@@ -197,20 +197,20 @@ export default function Applications() {
       {detail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-bold text-slate-900">Application {detail.id}</h3>
+            <h3 className="text-lg font-bold text-slate-900">Application #{String(detail.id).slice(0, 8)}</h3>
 
             <div className="mt-5 space-y-3 text-sm">
               <div className="flex justify-between border-b border-slate-100 pb-2">
                 <span className="text-slate-500">Job</span>
-                <span className="font-medium text-slate-800">{detail.jobId || "—"}</span>
+                <span className="font-medium text-slate-800">{detail.job?.title || "—"}</span>
               </div>
               <div className="flex justify-between border-b border-slate-100 pb-2">
-                <span className="text-slate-500">User</span>
-                <span className="font-medium text-slate-800">{detail.userId || "—"}</span>
+                <span className="text-slate-500">Applicant</span>
+                <span className="font-medium text-slate-800">{detail.user?.fullName || detail.user?.email || "—"}</span>
               </div>
               <div className="flex justify-between border-b border-slate-100 pb-2">
                 <span className="text-slate-500">Status</span>
-                <span className={`rounded-full px-3 py-0.5 text-xs font-medium ${statusColor(detail.status)}`}>
+                <span className={`rounded-full px-3 py-0.5 text-xs font-medium ${statusBadgeClass(detail.status)}`}>
                   {detail.status}
                 </span>
               </div>
