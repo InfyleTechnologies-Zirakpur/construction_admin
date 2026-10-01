@@ -1,0 +1,686 @@
+========================================================================================================================
+                      ADMIN PANEL API INTEGRATION & VERIFICATION REPORT
+========================================================================================================================
+Generated At: 2026-09-30
+Target Application: Admin Panel (d:\constructor-backend\Admin)
+Backend API Prefix: /api/v1
+Total Integrated APIs Verified: 50
+Working APIs: 47
+APIs with Parameter/Schema Discrepancies: 2
+APIs Missing Backend Route: 1
+========================================================================================================================
+
+SUMMARY OF CRITICAL FINDINGS & FIXES:
+------------------------------------------------------------------------------------------------------------------------
+1. [CONFIG] Environment URL Default:
+   - Issue: Admin/src/api/client.js falls back to Render production ("https://constructor-backend-bhah.onrender.com/api/v1").
+   - Fix: Create an .env or .env.development file in Admin/ setting:
+     VITE_API_BASE_URL=http://localhost:3000/api/v1
+
+2. [MISMATCH] Project Status Enum ("on_hold"):
+   - API: PATCH /api/v1/projects/:id (projectsApi.update)
+   - Issue: Admin frontend Projects.jsx offers "on_hold" in status dropdown, but backend UpdateProjectDto only accepts
+     ['draft', 'active', 'completed', 'archived']. Selecting "on_hold" triggers HTTP 422 Validation Error.
+   - Fix: Add 'on_hold' to backend UpdateProjectDto and ProjectStatus enum, or remove 'on_hold' from Projects.jsx STATUS_OPTIONS.
+
+3. [MISMATCH] Application Status Enum ("pending" vs "reviewed"):
+   - API: PATCH /api/v1/applications/:id/status (applicationsApi.updateStatus)
+   - Issue: Admin frontend Applications.jsx offers ['pending', 'shortlisted', 'accepted', 'rejected'].
+     Backend UpdateApplicationStatusDto strictly expects ['reviewed', 'shortlisted', 'accepted', 'rejected'].
+     Selecting "pending" causes HTTP 422 Validation Error.
+   - Fix: Update Applications.jsx STATUS_OPTIONS to include "reviewed" and disallow rolling back to "pending".
+
+4. [MISSING ROUTE] Job Deletion:
+   - API: DELETE /api/v1/jobs/:id (jobsApi.remove)
+   - Issue: Defined in Admin/src/api/index.js as jobsApi.remove, but JobsController lacks a DELETE :id endpoint.
+   - Fix: Implement @Delete(':id') with @Roles('admin') in JobsController, or remove the unused helper from index.js.
+
+========================================================================================================================
+DETAILED API VERIFICATION TABLE
+========================================================================================================================
+
+------------------------------------------------------------------------------------------------------------------------
+1. AUTHENTICATION MODULE (authApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: Admin Login
+  HTTP Method: POST
+  API Endpoint: /api/v1/auth/login
+  Purpose/Description: Authenticates admin user with email and password, returning JWT access token & user profile.
+  Authentication Required: No (Public / Rate-limited to 10 req/min)
+  Request Parameters/Body: JSON body: { "email": string (email), "password": string (min 6 chars) }
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "user": { ... }, "accessToken": string, "expiresIn": number } }
+  Error Response: HTTP 401 Unauthorized ("Invalid credentials" / "Account is blocked" / "Account is locked")
+  Current Status: Working
+  Any Issue Found: None. Handled cleanly with rate limiting and password hashing.
+  Required Fix: None.
+
+- API Name: Get Authenticated User Profile
+  HTTP Method: GET
+  API Endpoint: /api/v1/auth/me
+  Purpose/Description: Retrieves the current logged-in admin user's profile and roles from the active JWT session.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: None (Headers: Authorization: Bearer <token>)
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "id": UUID, "email": string, "role": "admin", ... } }
+  Error Response: HTTP 401 Unauthorized ("Unauthorized")
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+------------------------------------------------------------------------------------------------------------------------
+2. USERS MANAGEMENT MODULE (usersApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: List Users
+  HTTP Method: GET
+  API Endpoint: /api/v1/users
+  Purpose/Description: Lists users across the platform with pagination and optional role filtering.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: Query params: page (number), limit (number), role (string, e.g. "job_seeker", "company")
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "items": User[], "total": number, "page": number, "limit": number } }
+  Error Response: HTTP 401 Unauthorized / HTTP 403 Forbidden
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Get User By ID
+  HTTP Method: GET
+  API Endpoint: /api/v1/users/:id
+  Purpose/Description: Fetches full profile details for any user by their UUID.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: URL Param: id (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "id": UUID, "fullName": string, "email": string, ... } }
+  Error Response: HTTP 404 Not Found / HTTP 400 Bad Request (Invalid UUID)
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Update User (Admin)
+  HTTP Method: PATCH
+  API Endpoint: /api/v1/users/:id
+  Purpose/Description: Allows admin to update user roles, toggle account active status (isActive), or edit profile details.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: URL Param: id (UUID); Body: { "role"?: string, "isActive"?: boolean, "fullName"?: string, "phone"?: string }
+  Success Response: HTTP 200 OK -> { "success": true, "data": User }
+  Error Response: HTTP 404 Not Found / HTTP 422 Unprocessable Entity
+  Current Status: Working
+  Any Issue Found: None. AdminUpdateUserDto accepts both role and isActive cleanly.
+  Required Fix: None.
+
+- API Name: Deactivate User
+  HTTP Method: DELETE
+  API Endpoint: /api/v1/users/:id
+  Purpose/Description: Deactivates a user account and invalidates active sessions.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: URL Param: id (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "message": "User deactivated" }
+  Error Response: HTTP 404 Not Found / HTTP 403 Forbidden
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+------------------------------------------------------------------------------------------------------------------------
+3. COMPANIES MODULE (companiesApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: List Companies
+  HTTP Method: GET
+  API Endpoint: /api/v1/companies
+  Purpose/Description: Lists registered company profiles with verification status and pagination.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: Query params: page (number), limit (number), status (string, e.g. "pending", "verified", "rejected")
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "items": Company[], "total": number } }
+  Error Response: HTTP 401 Unauthorized / HTTP 403 Forbidden
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Get Company By ID
+  HTTP Method: GET
+  API Endpoint: /api/v1/companies/:id
+  Purpose/Description: Retrieves full profile and verification details of a specific company.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: URL Param: id (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "data": Company }
+  Error Response: HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Verify Company Status
+  HTTP Method: PATCH
+  API Endpoint: /api/v1/companies/:id/verify
+  Purpose/Description: Approves or rejects a company profile with optional admin verification remarks.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: URL Param: id (UUID); Body: { "verificationStatus": "pending"|"verified"|"rejected", "verificationRemarks"?: string }
+  Success Response: HTTP 200 OK -> { "success": true, "message": "Company verification status updated", "data": Company }
+  Error Response: HTTP 422 Unprocessable Entity / HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+------------------------------------------------------------------------------------------------------------------------
+4. CONTRACTORS MODULE (contractorsApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: List Contractors
+  HTTP Method: GET
+  API Endpoint: /api/v1/contractors
+  Purpose/Description: Lists contractor profiles with GST, city, contact info, and verification status.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: Query params: page (number), limit (number), status (string)
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "items": Contractor[], "total": number } }
+  Error Response: HTTP 401 Unauthorized / HTTP 403 Forbidden
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Get Contractor By ID
+  HTTP Method: GET
+  API Endpoint: /api/v1/contractors/:id
+  Purpose/Description: Retrieves contractor profile details, verification status, and contact info.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: URL Param: id (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "data": Contractor }
+  Error Response: HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Verify Contractor Status
+  HTTP Method: PATCH
+  API Endpoint: /api/v1/contractors/:id/verify
+  Purpose/Description: Verifies or rejects a contractor account.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: URL Param: id (UUID); Body: { "verificationStatus": "pending"|"verified"|"rejected", "verificationRemarks"?: string }
+  Success Response: HTTP 200 OK -> { "success": true, "data": Contractor }
+  Error Response: HTTP 422 Unprocessable Entity / HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+------------------------------------------------------------------------------------------------------------------------
+5. PROJECTS & SITES MODULE (projectsApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: List Projects
+  HTTP Method: GET
+  API Endpoint: /api/v1/projects
+  Purpose/Description: Lists all construction projects across the platform with pagination and status filter.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: Query params: page (number), limit (number), status (string)
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "items": Project[], "total": number } }
+  Error Response: HTTP 401 Unauthorized / HTTP 403 Forbidden
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Get Project By ID
+  HTTP Method: GET
+  API Endpoint: /api/v1/projects/:id
+  Purpose/Description: Retrieves project details including assigned sites and budgets.
+  Authentication Required: Yes (Bearer JWT, Role: admin, contractor)
+  Request Parameters/Body: URL Param: id (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "data": Project }
+  Error Response: HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Update Project Status
+  HTTP Method: PATCH
+  API Endpoint: /api/v1/projects/:id
+  Purpose/Description: Updates project status or properties.
+  Authentication Required: Yes (Bearer JWT, Role: admin, contractor)
+  Request Parameters/Body: URL Param: id (UUID); Body: { "status"?: "draft"|"active"|"completed"|"archived" }
+  Success Response: HTTP 200 OK -> { "success": true, "message": "Project updated successfully", "data": Project }
+  Error Response: HTTP 422 Unprocessable Entity ("Validation failed: status must be one of...")
+  Current Status: Working with Discrepancy
+  Any Issue Found: Frontend Projects.jsx includes "on_hold" in dropdown, but backend DTO rejects "on_hold".
+  Required Fix: Add "on_hold" to backend UpdateProjectDto or remove "on_hold" from frontend STATUS_OPTIONS.
+
+- API Name: List Project Sites
+  HTTP Method: GET
+  API Endpoint: /api/v1/projects/:projectId/sites
+  Purpose/Description: Lists all sites configured under a specific project.
+  Authentication Required: Yes (Bearer JWT, Role: admin, contractor)
+  Request Parameters/Body: URL Param: projectId (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "data": ProjectSite[] }
+  Error Response: HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None. Handled in ProjectSitesController.
+  Required Fix: None.
+
+- API Name: Get Single Site
+  HTTP Method: GET
+  API Endpoint: /api/v1/sites/:siteId
+  Purpose/Description: Retrieves details of a specific site.
+  Authentication Required: Yes (Bearer JWT, Role: admin, contractor, site_engineer)
+  Request Parameters/Body: URL Param: siteId (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "data": ProjectSite }
+  Error Response: HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+------------------------------------------------------------------------------------------------------------------------
+6. JOBS MODULE (jobsApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: List Jobs
+  HTTP Method: GET
+  API Endpoint: /api/v1/jobs
+  Purpose/Description: Lists job postings with filters for search, location, category, and salary.
+  Authentication Required: Yes (Bearer JWT, Role: admin, company, job_seeker)
+  Request Parameters/Body: Query params: page, limit, search, location, minDailyPay, skill, projectType, experienceLevel
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "items": Job[], "total": number } }
+  Error Response: HTTP 401 Unauthorized
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Get Job By ID
+  HTTP Method: GET
+  API Endpoint: /api/v1/jobs/:id
+  Purpose/Description: Retrieves full job posting details.
+  Authentication Required: Yes (Bearer JWT, Role: admin, company, job_seeker)
+  Request Parameters/Body: URL Param: id (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "data": Job }
+  Error Response: HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Moderate Job
+  HTTP Method: PATCH
+  API Endpoint: /api/v1/jobs/:id/moderate
+  Purpose/Description: Admin moderation route to approve (published), reject, or close a job posting.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: URL Param: id (UUID); Body: { "status": "published"|"rejected"|"closed", "moderationRemarks"?: string }
+  Success Response: HTTP 200 OK -> { "success": true, "message": "Job moderated successfully", "data": Job }
+  Error Response: HTTP 422 Unprocessable Entity / HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Delete Job
+  HTTP Method: DELETE
+  API Endpoint: /api/v1/jobs/:id
+  Purpose/Description: Delete or hard-remove a job listing.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: URL Param: id (UUID)
+  Success Response: N/A (Route not found on backend)
+  Error Response: HTTP 404 Not Found (Cannot DELETE /api/v1/jobs/:id)
+  Current Status: Not Working
+  Any Issue Found: jobsApi.remove helper exists in Admin/src/api/index.js, but no DELETE endpoint exists in JobsController.
+  Required Fix: Implement @Delete(':id') in JobsController if job deletion is supported, or remove the unused client method.
+
+------------------------------------------------------------------------------------------------------------------------
+7. APPLICATIONS MODULE (applicationsApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: List Applications
+  HTTP Method: GET
+  API Endpoint: /api/v1/applications
+  Purpose/Description: Lists job applications across the platform with applicant and job details.
+  Authentication Required: Yes (Bearer JWT, Role: admin, company, job_seeker)
+  Request Parameters/Body: Query params: page, limit, status
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "items": Application[], "total": number } }
+  Error Response: HTTP 401 Unauthorized
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Get Application By ID
+  HTTP Method: GET
+  API Endpoint: /api/v1/applications/:id
+  Purpose/Description: Retrieves detailed view of an application, worker profile, and attached documents.
+  Authentication Required: Yes (Bearer JWT, Role: admin, company, job_seeker)
+  Request Parameters/Body: URL Param: id (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "data": Application }
+  Error Response: HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Update Application Status
+  HTTP Method: PATCH
+  API Endpoint: /api/v1/applications/:id/status
+  Purpose/Description: Updates candidate application status (reviewed, shortlisted, accepted, rejected).
+  Authentication Required: Yes (Bearer JWT, Role: admin, company)
+  Request Parameters/Body: URL Param: id (UUID); Body: { "status": "reviewed"|"shortlisted"|"accepted"|"rejected", "rejectionReason"?: string }
+  Success Response: HTTP 200 OK -> { "success": true, "message": "Application status updated", "data": Application }
+  Error Response: HTTP 422 Unprocessable Entity
+  Current Status: Working with Discrepancy
+  Any Issue Found: Frontend Applications.jsx includes "pending" in dropdown; backend UpdateApplicationStatusDto rejects "pending".
+  Required Fix: Update Applications.jsx STATUS_OPTIONS to ['reviewed', 'shortlisted', 'accepted', 'rejected'].
+
+------------------------------------------------------------------------------------------------------------------------
+8. DOCUMENTS MODULE (documentsApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: List Documents
+  HTTP Method: GET
+  API Endpoint: /api/v1/documents
+  Purpose/Description: Lists uploaded documents and certificates with optional entityType/entityId filtering.
+  Authentication Required: Yes (Bearer JWT, Role: admin, etc.)
+  Request Parameters/Body: Query params: entityType (string), entityId (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "data": Document[] }
+  Error Response: HTTP 401 Unauthorized
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Get Document By ID
+  HTTP Method: GET
+  API Endpoint: /api/v1/documents/:id
+  Purpose/Description: Retrieves metadata for a specific document.
+  Authentication Required: Yes (Bearer JWT, Role: admin, etc.)
+  Request Parameters/Body: URL Param: id (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "data": Document }
+  Error Response: HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+------------------------------------------------------------------------------------------------------------------------
+9. AUDIT LOGS MODULE (auditApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: List Audit Logs
+  HTTP Method: GET
+  API Endpoint: /api/v1/audit-logs
+  Purpose/Description: Retrieves system audit logs for administrative tracking and compliance.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: Query params: page, limit, entityType, actorId
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "items": AuditLog[], "total": number } }
+  Error Response: HTTP 401 Unauthorized / HTTP 403 Forbidden
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+------------------------------------------------------------------------------------------------------------------------
+10. SITE ENGINEERS MODULE (siteEngineersApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: List Site Engineers
+  HTTP Method: GET
+  API Endpoint: /api/v1/site-engineers
+  Purpose/Description: Lists registered site engineers across the platform.
+  Authentication Required: Yes (Bearer JWT, Role: admin, contractor)
+  Request Parameters/Body: None
+  Success Response: HTTP 200 OK -> { "success": true, "data": SiteEngineer[] }
+  Error Response: HTTP 401 Unauthorized / HTTP 403 Forbidden
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Get Site Engineer By ID
+  HTTP Method: GET
+  API Endpoint: /api/v1/site-engineers/:id
+  Purpose/Description: Retrieves specific engineer profile and site assignments.
+  Authentication Required: Yes (Bearer JWT, Role: admin, contractor)
+  Request Parameters/Body: URL Param: id (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "data": SiteEngineer }
+  Error Response: HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+------------------------------------------------------------------------------------------------------------------------
+11. REPORTS MODULE (reportsApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: Project Daily Reports & Financial Summary
+  HTTP Method: GET
+  API Endpoint: /api/v1/projects/:projectId/reports
+  Purpose/Description: Returns all daily reports for a project along with server-calculated labour, material, and profit summary.
+  Authentication Required: Yes (Bearer JWT, Role: admin, contractor)
+  Request Parameters/Body: URL Param: projectId (UUID); Query param: status (optional)
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "items": DailyReport[], "summary": { ... } } }
+  Error Response: HTTP 404 Not Found / HTTP 403 Forbidden
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Site Daily Reports
+  HTTP Method: GET
+  API Endpoint: /api/v1/sites/:siteId/daily-reports
+  Purpose/Description: Retrieves daily report entries for an individual construction site.
+  Authentication Required: Yes (Bearer JWT, Role: admin, contractor, site_engineer)
+  Request Parameters/Body: URL Param: siteId (UUID); Query params: dateFrom, dateTo, status
+  Success Response: HTTP 200 OK -> { "success": true, "data": DailyReport[] }
+  Error Response: HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Get Single Daily Report
+  HTTP Method: GET
+  API Endpoint: /api/v1/reports/:id
+  Purpose/Description: Returns full breakdown of labor, material, and progress for a single report.
+  Authentication Required: Yes (Bearer JWT, Role: admin, contractor, site_engineer)
+  Request Parameters/Body: URL Param: id (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "data": DailyReport }
+  Error Response: HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Update Report Status
+  HTTP Method: PATCH
+  API Endpoint: /api/v1/reports/:id/status
+  Purpose/Description: Submits or reviews a daily report.
+  Authentication Required: Yes (Bearer JWT, Role: admin, contractor, site_engineer)
+  Request Parameters/Body: URL Param: id (UUID); Body: { "status": "submitted"|"reviewed", "remarks"?: string }
+  Success Response: HTTP 200 OK -> { "success": true, "message": "Report reviewed", "data": DailyReport }
+  Error Response: HTTP 422 Unprocessable Entity
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+------------------------------------------------------------------------------------------------------------------------
+12. NOTIFICATIONS MODULE (notificationsApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: List Admin Notifications
+  HTTP Method: GET
+  API Endpoint: /api/v1/notifications/admin
+  Purpose/Description: Lists all system and announcement notifications across the platform with recipient user data.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: Query params: page, limit, event, userId, search
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "items": Notification[], "total": number, "unreadCount": number } }
+  Error Response: HTTP 401 Unauthorized / HTTP 403 Forbidden
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Send Admin Notification / Broadcast
+  HTTP Method: POST
+  API Endpoint: /api/v1/notifications/send
+  Purpose/Description: Sends notification to specific users or broadcasts announcement to all active users via BullMQ/FCM.
+  Authentication Required: Yes (Bearer JWT, Role: admin)
+  Request Parameters/Body: Body: { "title": string, "body": string, "event": "admin_announcement", "userIds"?: string[] }
+  Success Response: HTTP 200 OK -> { "success": true, "message": "Notification dispatched to N user(s)", "data": { "count": number } }
+  Error Response: HTTP 422 Unprocessable Entity / HTTP 400 Bad Request
+  Current Status: Working
+  Any Issue Found: None. Works cleanly with admin_announcement.
+  Required Fix: None.
+
+- API Name: List My Notifications
+  HTTP Method: GET
+  API Endpoint: /api/v1/notifications
+  Purpose/Description: Retrieves authenticated user's notification feed.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: Query params: page, limit
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "items": Notification[], "total": number } }
+  Error Response: HTTP 401 Unauthorized
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Mark Notification Read
+  HTTP Method: PATCH
+  API Endpoint: /api/v1/notifications/:id/read
+  Purpose/Description: Marks a specific notification as read.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: URL Param: id (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "message": "Notification marked as read" }
+  Error Response: HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Mark All Notifications Read
+  HTTP Method: PATCH
+  API Endpoint: /api/v1/notifications/read-all
+  Purpose/Description: Marks all notifications for current user as read.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: None
+  Success Response: HTTP 200 OK -> { "success": true, "message": "All notifications marked as read" }
+  Error Response: HTTP 401 Unauthorized
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+------------------------------------------------------------------------------------------------------------------------
+13. CONVERSATIONS MODULE (conversationsApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: List Conversations
+  HTTP Method: GET
+  API Endpoint: /api/v1/conversations
+  Purpose/Description: Lists chat conversations for administrative monitoring.
+  Authentication Required: Yes (Bearer JWT, Role: admin, company, job_seeker)
+  Request Parameters/Body: None
+  Success Response: HTTP 200 OK -> { "success": true, "data": Conversation[] }
+  Error Response: HTTP 401 Unauthorized
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: List Conversation Messages
+  HTTP Method: GET
+  API Endpoint: /api/v1/conversations/:id/messages
+  Purpose/Description: Retrieves all chat messages belonging to a conversation.
+  Authentication Required: Yes (Bearer JWT, Role: admin, company, job_seeker)
+  Request Parameters/Body: URL Param: id (UUID)
+  Success Response: HTTP 200 OK -> { "success": true, "data": Message[] }
+  Error Response: HTTP 404 Not Found
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+------------------------------------------------------------------------------------------------------------------------
+14. CONSTRUCTION CALCULATORS MODULE (calculatorsApi)
+------------------------------------------------------------------------------------------------------------------------
+- API Name: Concrete Calculator
+  HTTP Method: GET
+  API Endpoint: /api/v1/calculators/concrete
+  Purpose/Description: Calculates concrete quantity, cement bags, sand, and aggregate based on length, breadth, height, and mix ratio.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: Query params: length (number), breadth (number), height (number), mixRatio (string, default "1:2:4")
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "volumeM3": number, "cementBags": number, "sandTons": number, ... } }
+  Error Response: HTTP 400 Bad Request
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Cement Calculator
+  HTTP Method: GET
+  API Endpoint: /api/v1/calculators/cement
+  Purpose/Description: Calculates cement bag requirements for a specified plaster/masonry surface area and thickness.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: Query params: area (number), thickness (number), mixRatio (string, default "1:4")
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "cementBags": number, ... } }
+  Error Response: HTTP 400 Bad Request
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Sand Calculator
+  HTTP Method: GET
+  API Endpoint: /api/v1/calculators/sand
+  Purpose/Description: Calculates sand quantity (cubic meters/tons) required for mortar or concrete.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: Query params: area (number), thickness (number), mixRatio (string)
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "sandCubicMeters": number, "sandTons": number } }
+  Error Response: HTTP 400 Bad Request
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Aggregate Calculator
+  HTTP Method: GET
+  API Endpoint: /api/v1/calculators/aggregate
+  Purpose/Description: Calculates coarse aggregate quantity for concrete foundations and slabs.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: Query params: length (number), breadth (number), height (number), mixRatio (string)
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "aggregateTons": number, ... } }
+  Error Response: HTTP 400 Bad Request
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Brick Calculator
+  HTTP Method: GET
+  API Endpoint: /api/v1/calculators/brick
+  Purpose/Description: Estimates number of bricks and mortar required for a given wall dimension.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: Query params: wallLength, wallHeight, wallThickness, mortarThickness
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "numberOfBricks": number, "mortarVolumeM3": number } }
+  Error Response: HTTP 400 Bad Request
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Steel Calculator
+  HTTP Method: GET
+  API Endpoint: /api/v1/calculators/steel
+  Purpose/Description: Calculates rebar/steel reinforcement weight in kilograms based on concrete volume and steel percentage.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: Query params: length, breadth, depth, steelPercentage
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "weightKg": number, "steelTons": number } }
+  Error Response: HTTP 400 Bad Request
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Flooring Calculator
+  HTTP Method: GET
+  API Endpoint: /api/v1/calculators/flooring
+  Purpose/Description: Calculates required tiles, boxes, and wastage allowance for room dimensions.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: Query params: roomLength, roomBreadth, tileLength, tileBreadth, wastagePercent
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "totalTiles": number, "areaSqM": number } }
+  Error Response: HTTP 400 Bad Request
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Paint Calculator
+  HTTP Method: GET
+  API Endpoint: /api/v1/calculators/paint
+  Purpose/Description: Calculates litres of paint required based on wall area, number of coats, and coverage per litre.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: Query params: wallArea, coats, coveragePerLitre
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "litresRequired": number } }
+  Error Response: HTTP 400 Bad Request
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Plaster Calculator
+  HTTP Method: GET
+  API Endpoint: /api/v1/calculators/plaster
+  Purpose/Description: Estimates cement and sand needed for wall plastering.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: Query params: area, thickness, mixRatio
+  Success Response: HTTP 200 OK -> { "success": true, "data": { "cementBags": number, "sandTons": number } }
+  Error Response: HTTP 400 Bad Request
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+- API Name: Material Estimation Calculator
+  HTTP Method: GET
+  API Endpoint: /api/v1/calculators/material-estimation
+  Purpose/Description: General material estimation helper across standard construction components.
+  Authentication Required: Yes (Bearer JWT)
+  Request Parameters/Body: Query params: area, thickness, materialType
+  Success Response: HTTP 200 OK -> { "success": true, "data": { ... } }
+  Error Response: HTTP 400 Bad Request
+  Current Status: Working
+  Any Issue Found: None.
+  Required Fix: None.
+
+========================================================================================================================
+END OF REPORT
+========================================================================================================================
