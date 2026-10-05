@@ -15,6 +15,7 @@ import Tools from "../pages/Tools";
 import Reports from "../pages/Reports";
 import Notifications from "../pages/Notifications";
 import Roles from "../pages/Roles";
+import Posts from "../pages/Posts";
 
 const isAuthenticated = () => !!localStorage.getItem("adminToken");
 
@@ -41,6 +42,7 @@ export default function AdminRoutes() {
         <Route path="/contractors" element={<Contractors />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/jobs" element={<Jobs />} />
+        <Route path="/posts" element={<Posts />} />
         <Route path="/applications" element={<Applications />} />
         <Route path="/audit" element={<Audit />} />
         <Route path="/tools" element={<Tools />} />

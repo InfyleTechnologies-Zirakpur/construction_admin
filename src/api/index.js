@@ -65,6 +65,16 @@ export const jobsApi = {
   remove: (id) => unwrap(apiClient.delete(`/jobs/${id}`)),
 };
 
+export const postsApi = {
+  list: (params) => unwrap(apiClient.get("/posts", { params })),
+  get: (id) => unwrap(apiClient.get(`/posts/${id}`)),
+  create: (payload) => unwrap(apiClient.post("/posts", payload)),
+  update: (id, payload) => unwrap(apiClient.patch(`/posts/${id}`, payload)),
+  remove: (id) => unwrap(apiClient.delete(`/posts/${id}`)),
+  comments: (id, params) => unwrap(apiClient.get(`/posts/${id}/comments`, { params })),
+  addComment: (id, payload) => unwrap(apiClient.post(`/posts/${id}/comments`, payload)),
+};
+
 export const applicationsApi = {
   list: (params) => unwrap(apiClient.get("/applications", { params })),
   get: (id) => unwrap(apiClient.get(`/applications/${id}`)),
