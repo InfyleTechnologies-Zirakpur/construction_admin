@@ -34,6 +34,11 @@ const menuItems = [
     icon: "fa-solid fa-briefcase",
   },
   {
+    name: "Manage Post",
+    path: "/posts",
+    icon: "fa-solid fa-signs-post",
+  },
+  {
     name: "Applications",
     path: "/applications",
     icon: "fa-solid fa-clipboard-list",
