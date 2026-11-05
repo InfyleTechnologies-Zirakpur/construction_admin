@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { X } from "lucide-react";
 
 // Image that never shows a broken icon: on error it renders the reference
-// name (initials) instead. Clicking a loaded image opens an in-screen
-// preview modal with a close button.
+// name (initials) instead.
 function initialsOf(name) {
   const clean = (name || "?").trim();
   if (!clean || clean === "?") return "?";
@@ -28,28 +26,34 @@ export function SafeImage({ src, alt, className = "" }) {
 
 export function Avatar({ user, size = 40, onPreview }) {
   const [failed, setFailed] = useState(false);
-  const name = user?.fullName || user?.email || "?";
-  const showImg = user?.avatarUrl && !failed;
+  const name = user?.fullName || user?.name || user?.email || "?";
+  const showImg = (user?.avatarUrl || user?.profilePhotoUrl) && !failed;
   const style = { width: size, height: size, fontSize: Math.max(12, size * 0.38) };
 
   const inner = showImg ? (
     <img
-      src={user.avatarUrl}
+      src={user.avatarUrl || user.profilePhotoUrl}
       alt={name}
       loading="lazy"
       onError={() => setFailed(true)}
       className="h-full w-full rounded-full object-cover"
     />
   ) : (
-    <span className="font-semibold">{initialsOf(name)}</span>
+    <span className="font-bold">{initialsOf(name)}</span>
   );
 
   const cls =
-    "flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white";
+    "flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-100 text-primary-700 border border-primary-200";
 
   if (showImg && onPreview) {
     return (
-      <button type="button" onClick={() => onPreview(user.avatarUrl, name)} className={cls} style={style} title="Preview photo">
+      <button
+        type="button"
+        onClick={() => onPreview(user.avatarUrl || user.profilePhotoUrl, name)}
+        className={cls}
+        style={style}
+        title="View photo"
+      >
         {inner}
       </button>
     );
@@ -61,34 +65,31 @@ export function Avatar({ user, size = 40, onPreview }) {
   );
 }
 
+// Fallback image viewer helper
 export function ImagePreview({ src, name, onClose }) {
   const [failed, setFailed] = useState(false);
+  if (!src) return null;
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
-      <div
-        className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
-          <p className="truncate text-sm font-semibold text-slate-800">{name || "Preview"}</p>
-          <button onClick={onClose} className="rounded-lg p-2 hover:bg-slate-100" title="Close">
-            <X size={18} className="text-slate-500" />
+    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 text-xs">
+        <span className="font-semibold text-slate-700">{name || "Image Preview"}</span>
+        {onClose && (
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            Close
           </button>
-        </div>
-        <div className="flex items-center justify-center bg-slate-100 p-6">
-          {!src || failed ? (
-            <div className="flex h-40 w-40 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-4xl font-bold text-white">
-              {initialsOf(name)}
-            </div>
-          ) : (
-            <img
-              src={src}
-              alt={name}
-              onError={() => setFailed(true)}
-              className="max-h-[60vh] rounded-lg object-contain"
-            />
-          )}
-        </div>
+        )}
+      </div>
+      <div className="flex justify-center bg-slate-50 p-2 rounded-lg">
+        {failed ? (
+          <span className="text-xs text-slate-400">Failed to load preview</span>
+        ) : (
+          <img
+            src={src}
+            alt={name || "Preview"}
+            onError={() => setFailed(true)}
+            className="max-h-60 rounded-md object-contain"
+          />
+        )}
       </div>
     </div>
   );

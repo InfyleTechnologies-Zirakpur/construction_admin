@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { FileText, Download, TrendingUp } from "lucide-react";
+import { FileText, Download, TrendingUp, IndianRupee } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { projectsApi, reportsApi, extractList, apiError } from "../../api";
-import { useFocusHighlight, focusRing } from "../../hooks/useFocusHighlight";
+import { statusBadgeClass } from "../../theme/colors";
 
 const money = (v) =>
   v === null || v === undefined || v === "" ? "—" : `₹${Number(v).toLocaleString("en-IN")}`;
@@ -10,7 +10,6 @@ const money = (v) =>
 export default function Reports() {
   const [projectId, setProjectId] = useState("");
   const [status, setStatus] = useState("");
-  const focusId = useFocusHighlight();
 
   const projectsQuery = useQuery({
     queryKey: ["reports-projects"],
@@ -25,7 +24,6 @@ export default function Reports() {
     enabled: !!activeProjectId,
   });
 
-  // Backend: { success, data: { items, summary } } — via TransformInterceptor
   const payload = reportsQuery.data?.data ?? reportsQuery.data;
   const items = payload?.items ?? [];
   const summary = payload?.summary ?? null;
@@ -57,23 +55,33 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Reports</h1>
-          <p className="mt-2 text-slate-600">Daily reports + cost/profit per project (server-calculated)</p>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
+            Financial & Site Analytics
+          </span>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            Project Reports
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-slate-500">
+            Daily logs, labour/material cost analysis, and estimated profitability.
+          </p>
         </div>
+
         <button
           onClick={downloadCsv}
           disabled={!items.length}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 font-medium text-white shadow-lg shadow-primary/20 transition-colors hover:bg-primary-600 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-orange-600 disabled:opacity-50 transition-colors"
         >
-          <Download size={20} /> Export CSV
+          <Download size={15} /> Export CSV Report
         </button>
       </div>
 
+      {/* Filter Selectors */}
       <div className="flex flex-wrap items-center gap-3">
         <select
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm"
+          className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 focus:border-primary focus:outline-none shadow-xs"
           value={activeProjectId}
           onChange={(e) => setProjectId(e.target.value)}
         >
@@ -81,12 +89,13 @@ export default function Reports() {
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
+
         <select
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm"
+          className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 focus:border-primary focus:outline-none shadow-xs"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
         >
-          <option value="">All statuses</option>
+          <option value="">All report statuses</option>
           <option value="draft">Draft</option>
           <option value="submitted">Submitted</option>
           <option value="reviewed">Reviewed</option>
@@ -94,64 +103,65 @@ export default function Reports() {
       </div>
 
       {reportsQuery.isError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
-          Failed to load reports: {apiError(reportsQuery.error)}
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-700">
+          Failed to load project reports: {apiError(reportsQuery.error)}
         </div>
       )}
 
+      {/* Summary Financial Metric Cards */}
       {summary && (
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { label: "Labour cost", value: money(summary.totalLabourCost) },
-            { label: "Material cost", value: money(summary.totalMaterialCost) },
-            { label: "Daily cost", value: money(summary.totalDailyCost) },
-            { label: "Est. profit", value: money(summary.estimatedProfit ?? summary.totalProfit) },
+            { label: "Total Labour Cost", value: money(summary.totalLabourCost) },
+            { label: "Total Material Cost", value: money(summary.totalMaterialCost) },
+            { label: "Cumulative Daily Cost", value: money(summary.totalDailyCost) },
+            { label: "Estimated Gross Profit", value: money(summary.estimatedProfit ?? summary.totalProfit) },
           ].map((s) => (
-            <div key={s.label} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase text-slate-500">
-                <TrendingUp size={14} /> {s.label}
+            <div key={s.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <TrendingUp size={14} className="text-primary" /> {s.label}
               </p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">{s.value}</p>
+              <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{s.value}</p>
             </div>
           ))}
         </div>
       )}
 
-      <div className="space-y-4">
+      {/* Reports List */}
+      <div className="space-y-3">
         {reportsQuery.isLoading ? (
-          <div className="h-40 animate-pulse rounded-2xl border border-slate-200 bg-white" />
+          <div className="h-44 animate-pulse rounded-2xl border border-slate-200 bg-white" />
+        ) : items.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-16 text-center text-xs text-slate-400">
+            No daily reports logged for this project yet.
+          </div>
         ) : (
           items.map((report) => (
-            <div key={report.id} id={`row-${report.id}`} className={`rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-lg ${focusRing(report.id, focusId)}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                    <FileText size={24} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900">
-                      {report.date ? new Date(report.date).toLocaleDateString() : report.id.slice(0, 8)}
-                    </h3>
-                    <div className="mt-1 flex gap-4 text-sm text-slate-500">
-                      <span>{report.status}</span>
-                      <span>•</span>
-                      <span>Cost {money(report.totalDailyCost)}</span>
-                      <span>•</span>
-                      <span>Profit {money(report.estimatedProfit)}</span>
-                    </div>
+            <div
+              key={report.id}
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-colors hover:border-primary/40 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary">
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    {report.date ? new Date(report.date).toLocaleDateString() : `Report #${report.id.slice(0, 8)}`}
+                  </h3>
+                  <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                    <span>Daily Cost: <strong className="text-slate-800">{money(report.totalDailyCost)}</strong></span>
+                    <span>•</span>
+                    <span>Profit: <strong className="text-emerald-700">{money(report.estimatedProfit)}</strong></span>
                   </div>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                  {report.status}
-                </span>
               </div>
+
+              <span className={`w-fit rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusBadgeClass(report.status)}`}>
+                {report.status || "draft"}
+              </span>
             </div>
           ))
-        )}
-        {!reportsQuery.isLoading && items.length === 0 && (
-          <p className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
-            No reports for this project yet
-          </p>
         )}
       </div>
     </div>

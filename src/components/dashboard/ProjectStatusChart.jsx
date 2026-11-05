@@ -6,30 +6,29 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-
 import { colors } from "../../theme/colors";
 
 const COLORS = [
-  colors.blue,
-  colors.success,
-  colors.warning,
   colors.primary,
+  "#2563eb",
+  "#16a34a",
+  "#f59e0b",
+  "#64748b",
 ];
 
 export default function ProjectStatusChart({ data }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-line bg-white shadow-[0_6px_18px_rgba(30,42,56,0.04)] transition-all hover:shadow-lg">
-      <div className="border-b border-line p-6">
-        <h2 className="text-lg font-bold text-dark">
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+      <div className="pb-5 border-b border-slate-100 mb-6">
+        <h2 className="text-base font-bold text-slate-900">
           Project Status
         </h2>
-        <p className="mt-1 text-sm text-text-secondary">
-          Distribution of project statuses
+        <p className="mt-0.5 text-xs text-slate-500">
+          Distribution across active lifecycle stages
         </p>
       </div>
-      <div className="p-6">
 
-      <div className="h-80">
+      <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -38,27 +37,33 @@ export default function ProjectStatusChart({ data }) {
               nameKey="name"
               cx="50%"
               cy="45%"
-              outerRadius={95}
+              outerRadius={90}
               innerRadius={55}
               paddingAngle={4}
             >
-              {data.map((entry, index) => (
+              {data.map((_, index) => (
                 <Cell
                   key={`cell-${index}`}
                   fill={COLORS[index % COLORS.length]}
                 />
               ))}
             </Pie>
-
-            <Tooltip />
-
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#ffffff",
+                borderColor: "#e2e8f0",
+                borderRadius: "12px",
+                fontSize: "12px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+              }}
+            />
             <Legend
               verticalAlign="bottom"
               height={36}
+              wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
             />
           </PieChart>
         </ResponsiveContainer>
-      </div>
       </div>
     </div>
   );

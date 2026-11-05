@@ -1,40 +1,35 @@
 export default function OperationalStats({ data }) {
   return (
-    <div className="rounded-2xl border border-line bg-white shadow-sm hover:shadow-lg transition-all overflow-hidden">
-      <div className="border-b border-line p-6">
-        <h2 className="text-lg font-bold text-dark">
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+      <div className="pb-5 border-b border-slate-100 mb-6">
+        <h2 className="text-base font-bold text-slate-900">
           Operational Statistics
         </h2>
-        <p className="mt-1 text-sm text-text-secondary">
-          Current platform performance
+        <p className="mt-0.5 text-xs text-slate-500">
+          Platform health and operational readiness
         </p>
       </div>
-      <div className="p-6">
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {data.map((item) => (
           <div key={item.label}>
-            <div className="mb-2 flex items-center justify-between gap-4">
-              <span className="text-sm font-medium text-slate-600">
+            <div className="mb-1.5 flex items-center justify-between gap-4">
+              <span className="text-xs font-medium text-slate-600">
                 {item.label}
               </span>
-
-              <span className="text-sm font-bold text-slate-900">
+              <span className="text-xs font-bold text-slate-900">
                 {item.value}
               </span>
             </div>
 
             <div className="h-2 overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-primary transition-all duration-500"
-                style={{
-                  width: `${item.percentage}%`,
-                }}
+                className="h-full rounded-full bg-primary transition-all duration-300"
+                style={{ width: `${item.percentage}%` }}
               />
             </div>
           </div>
         ))}
-      </div>
       </div>
     </div>
   );

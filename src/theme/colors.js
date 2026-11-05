@@ -1,50 +1,49 @@
 /**
- * Brand palette, mirrored from src/index.css `@theme` for the rare places that
- * need a raw colour value in JS (Recharts `fill`/`stroke` props, inline styles).
- * Everything else should use the Tailwind utilities (bg-primary, text-dark, ...).
+ * Brand palette, mirrored from src/index.css `@theme` for JS consumers
+ * (Recharts `fill`/`stroke` props, inline styles).
+ * Tailwind utilities (bg-primary, text-primary, etc.) should be preferred in JSX.
  */
 export const colors = {
   primary: "#ff7a00",
   primaryLight: "#ff9333",
-  primarySoft: "#fff6ed",
-  primaryBorder: "#ffd1a3",
+  primarySoft: "#fff7ed",
+  primaryBorder: "#fed7aa",
 
-  dark: "#1e2a38",
-  dark600: "#37485c",
-  dark700: "#2a394a",
-  dark800: "#1e2a38",
-  dark900: "#141d27",
-  dark950: "#0b1117",
+  dark: "#0f172a",
+  dark600: "#334155",
+  dark700: "#1e293b",
+  dark800: "#0f172a",
+  dark900: "#020617",
 
-  background: "#f4f5f7",
+  background: "#f8fafc",
   surface: "#ffffff",
-  line: "#d7d8d9",
+  line: "#e2e8f0",
 
-  text: "#1e2a38",
-  textSecondary: "#707172",
-  textMuted: "#979899",
+  text: "#0f172a",
+  textSecondary: "#64748b",
+  textMuted: "#94a3b8",
 
-  blue: "#007bff",
-  blueLight: "#3395ff",
-  blueSoft: "#e8f3ff",
+  blue: "#2563eb",
+  blueLight: "#60a5fa",
+  blueSoft: "#eff6ff",
 
-  success: "#1f9159",
-  successSoft: "#edf9f1",
+  success: "#16a34a",
+  successSoft: "#f0fdf4",
 
-  warning: "#e08600",
-  warningSoft: "#fef6e7",
+  warning: "#ea580c",
+  warningSoft: "#fff7ed",
 
-  error: "#d32f2f",
-  errorSoft: "#fdeded",
+  error: "#dc2626",
+  errorSoft: "#fef2f2",
 };
 
 /** Categorical series colours for charts. */
 export const chartSeries = [
-  colors.blue,
-  colors.success,
-  colors.warning,
   colors.primary,
-  colors.dark600,
+  "#2563eb",
+  "#16a34a",
+  "#d97706",
+  "#64748b",
 ];
 
 const STATUS_TONE = {
@@ -71,7 +70,7 @@ const STATUS_TONE = {
   rejected: "error",
   blocked: "error",
   failed: "error",
-  cancelled: "canceled",
+  cancelled: "error",
   expired: "error",
   banned: "error",
   suspended: "error",
@@ -104,26 +103,25 @@ export const statusTone = (status) => {
 };
 
 /**
- * Badge class recipe for a lifecycle status. Swap this in anywhere a page
- * still carries its own duplicated statusColor()/getStatusStyle() helper.
+ * Badge class recipe for a lifecycle status.
  */
 export const statusBadgeClass = (status) => {
   switch (statusTone(status)) {
     case "success":
-      return "bg-success-50 text-success-700 border-success-200";
+      return "bg-emerald-50 text-emerald-700 border border-emerald-200/80";
     case "warning":
-      return "bg-warning-50 text-warning-700 border-warning-200";
+      return "bg-amber-50 text-amber-700 border border-amber-200/80";
     case "error":
-      return "bg-error-50 text-error-700 border-error-200";
+      return "bg-rose-50 text-rose-700 border border-rose-200/80";
     case "info":
-      return "bg-blue-50 text-blue-700 border-blue-200";
+      return "bg-orange-50 text-orange-700 border border-orange-200/80";
     default:
-      return "bg-slate-100 text-slate-600 border-slate-200";
+      return "bg-slate-100 text-slate-700 border border-slate-200/80";
   }
 };
 
 const ROLE_TONE = {
-  admin: "error",
+  admin: "primary",
   company: "info",
   contractor: "neutral",
   job_seeker: "success",
@@ -133,15 +131,15 @@ const ROLE_TONE = {
 export const roleBadgeClass = (role) => {
   const tone = ROLE_TONE[String(role ?? "").toLowerCase()];
   switch (tone) {
-    case "error":
-      return "bg-error-50 text-error-700 border-error-200";
+    case "primary":
+      return "bg-orange-50 text-orange-700 border border-orange-200/80";
     case "info":
-      return "bg-blue-50 text-blue-700 border-blue-200";
+      return "bg-blue-50 text-blue-700 border border-blue-200/80";
     case "success":
-      return "bg-success-50 text-success-700 border-success-200";
+      return "bg-emerald-50 text-emerald-700 border border-emerald-200/80";
     case "neutral":
-      return "bg-slate-100 text-slate-700 border-slate-200";
+      return "bg-slate-100 text-slate-700 border border-slate-200/80";
     default:
-      return "bg-slate-100 text-slate-600 border-slate-200";
+      return "bg-slate-100 text-slate-700 border border-slate-200/80";
   }
 };
